@@ -15,6 +15,7 @@ import javax.swing.JPanel;
  * @author Stephen
  * @version 2019-04-24
  */
+@SuppressWarnings("serial")
 public class SignaturePanel extends JPanel
 {
 	private int pointRadius;

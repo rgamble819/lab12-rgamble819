@@ -2,12 +2,18 @@ import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -37,6 +43,7 @@ import javax.swing.JTextField;
  * @author Stephen
  * @version 2019-04-24
  */
+@SuppressWarnings("serial")
 public class DataEntryFrame extends JFrame
 {
 	/**
@@ -95,7 +102,14 @@ public class DataEntryFrame extends JFrame
 	 */
 	private void setVisuals(FormData data)
 	{
-		// TODO: set the text fields and the signature as corresponding to the fields in FormData.
+		this.firstName.setText(data.getFirstName());
+		this.middleInitial.setText(Character.toString(data.getMiddleInitial()));
+		this.lastName.setText(data.getLastName());
+		this.displayName.setText(data.getDisplayName());
+		this.SSN.setText(data.getSSN());
+		this.phone.setText(data.getPhone());
+		this.email.setText(data.getEmail());
+		this.address.setText(data.getAddress());
 	}
 
 	/**
@@ -103,6 +117,7 @@ public class DataEntryFrame extends JFrame
 	 */
 	private JTextField errorField = new JTextField("No Errors");
 
+	@SuppressWarnings("unchecked")
 	public DataEntryFrame()
 	{
 		this.setLayout(new GridLayout(7, 1));
@@ -123,10 +138,29 @@ public class DataEntryFrame extends JFrame
 		});
 		this.add(formSelect);
 
-		// TODO: add in all form-fillable components:
-		JPanel formFill = new JPanel(/* TODO: add layout manager */);
-		// TODO: add to panel...
+		JPanel formFill = new JPanel(new GridLayout(8,2));
+		
+		/*============Adding Components =============*/
+		formFill.add(firstNameInfo);
+		formFill.add(firstName);
+		formFill.add(midddleInitialInfo);
+		formFill.add(middleInitial);
+		formFill.add(lastNameInfo);
+		formFill.add(lastName);
+		formFill.add(displayNameInfo);
+		formFill.add(displayName);
+		formFill.add(SSNInfo);
+		formFill.add(SSN);
+		formFill.add(phoneInfo);
+		formFill.add(phone);
+		formFill.add(emailInfo);
+		formFill.add(email);
+		formFill.add(addressInfo);
+		formFill.add(address);
+
 		this.add(formFill);
+
+		/*==============================================*/
 
 		// Add in the signature panel:
 		spanel.addMouseMotionListener(new MouseMotionListener()
@@ -137,7 +171,8 @@ public class DataEntryFrame extends JFrame
 			@Override
 			public void mouseDragged(MouseEvent e)
 			{
-				// TODO: add a point to the panel on drag and repaint.
+				spanel.addPoint(e.getPoint());
+				spanel.repaint();
 			}
 		});
 		this.add(signatureInfo);
@@ -162,29 +197,48 @@ public class DataEntryFrame extends JFrame
 		saveForm.addActionListener((e) -> {
 			int select = formSelect.getSelectedIndex();
 
-			// TODO: use the JTextFields and the signature panel to set the values
-			// of the selected FormData object.
+			boolean isSet = datalist.get(select).setValues(firstName.getText(),
+					middleInitial.getText().toCharArray()[0], lastName.getText(), 
+					displayName.getText(), SSN.getText(), phone.getText(), 
+					email.getText(), address.getText(), spanel.getSignature());
 
 			this.setVisuals(datalist.get(select));
 			DefaultComboBoxModel<String> newComboBoxModel = getComboBoxModel(datalist);
 			formSelect.setModel(newComboBoxModel);
 			formSelect.setSelectedIndex(select);
 
-			// TODO: display an error message if setting the values failed. Else, display a success message.w
+			if(!isSet)
+			{
+				errorField.setText("Failed to save values!");
+			}
+			else 
+			{
+				errorField.setText("Successfully saved values");
+			}
+			
 		});
 
 		JButton resetForm = new JButton("Reset");
 		resetForm.addActionListener((e) -> {
 			int select = formSelect.getSelectedIndex();
-			// TODO: reset the values on the selected form data
+			
+			datalist.get(select).reset();;;
+			
 			this.setVisuals(datalist.get(select));
 		});
-
-		// TODO: add buttons to panel and add to frame
+		
+		/*============= Adding formHandling =================*/
+		formHandling.add(createForm);
+		formHandling.add(saveForm);
+		formHandling.add(resetForm);
+		
+		this.add(formHandling);
+		
+		/*====================================================*/
 
 		// Add in the error message field:
 		this.errorField.setEditable(false);
-		// TODO: add error field to frame
+		this.add(errorField);
 
 		// Add in the import/export panel:
 		JButton importButton = new JButton("Import");
@@ -193,31 +247,60 @@ public class DataEntryFrame extends JFrame
 		// the data in datalist.
 		importButton.addActionListener((e) -> {
 
-			// TODO: Choose a file (hint, use JFileChooser):
-			// TODO: extract object from a file (hint, use file.getAbsolutePath()):
-			//		 You will use the file to replace the datalist object. I.e. you will be loading in a new
-			//		 list of formdata.
-			// TODO: display error message on fail, else display success message
-
-        	// Use this code snippet to reset visuals after importing:
-			/*
+			JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			chooser.showOpenDialog(null);
+			
+			File file = chooser.getSelectedFile();
+			
+			try {
+				
+				FileInputStream fileIS = new FileInputStream(file);
+				ObjectInputStream objectIS = new ObjectInputStream(fileIS);
+				
+				datalist = (ArrayList<FormData>) objectIS.readObject();
+				objectIS.close();
+			} catch (Exception ex) {
+				errorField.setText("Error occured in importing");
+			}
+			
+			errorField.setText("Successfully imported Form Data!");	
+			
             int select = 0;
 			DefaultComboBoxModel<String> newComboBoxModel = getComboBoxModel(datalist);
 			formSelect.setModel(newComboBoxModel);
 			formSelect.setSelectedIndex(select);
 			this.setVisuals(datalist.get(select));
-			*/
+			
 		});
 		JButton exportButton = new JButton("Export");
 		exportButton.addActionListener((e) -> {
 
-			// TODO: Choose a file (hint, use JFileChooser):
-			// TODO: export datalist from a file (hint, use file.getAbsolutePath()):
-			// TODO: display error message on fail, else display success message
+			JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			chooser.showOpenDialog(null);
+
+			File file = chooser.getSelectedFile();
+			
+			try {
+				FileOutputStream fileOut = new FileOutputStream(file);
+				ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+				
+				objectOut.writeObject(datalist);
+				objectOut.close();
+			} catch (Exception ex) {
+				errorField.setText("Failed to export Form Data!");
+			}
+			errorField.setText("Successfully exported data!");
 		});
-
-		// TODO: add import/export to panel and add to frame
-
+		/*============== Import/Export Panel ===================*/
+		JPanel iePanel = new JPanel(new GridLayout(1,2));
+		
+		iePanel.add(importButton);
+		iePanel.add(exportButton);
+		
+		this.add(iePanel);
+	
 		// JFrame basics:
 		this.setTitle("Example Form Fillout");
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
